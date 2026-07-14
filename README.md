@@ -1,4 +1,4 @@
-# OllamaRAG Chatbot
+# Quattro AI Chatbot
 
 A fully local AI chatbot with **Retrieval-Augmented Generation (RAG)**, **image generation**, and **PDF/code generation** — powered by [Ollama](https://ollama.com) and a FastAPI backend.
 
