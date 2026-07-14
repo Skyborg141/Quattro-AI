@@ -1,0 +1,25 @@
+# --- Web server ---
+fastapi
+uvicorn[standard]
+python-multipart      # required by FastAPI for UploadFile / File() handling
+
+# --- Ollama client ---
+ollama
+httpx                  # used as the raw HTTP fallback in llm.py and rag.py
+
+# --- RAG / vector store ---
+chromadb
+
+# --- Document loaders (rag.py) ---
+pdfplumber              # .pdf
+python-docx              # .docx
+openpyxl                  # .xlsx / .xls
+python-pptx                # .pptx / .ppt
+
+# --- PDF report generation (generators.py) ---
+reportlab
+
+# NOTE: generators.py also handles image generation via a Stable Diffusion
+# A1111 REST API call (httpx-based), so no separate image-gen package is
+# needed here. If generators.py was modified since this was generated,
+# double check it against this file before installing.

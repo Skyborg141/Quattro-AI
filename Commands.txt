@@ -1,0 +1,10 @@
+Terminal:
+
+F:
+cd Quattro
+.venv\Scripts\activate
+uvicorn app.main:app --reload --port 8000
+
+
+Browser:
+http://localhost:8000

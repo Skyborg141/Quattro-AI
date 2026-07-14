@@ -1,0 +1,1287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quattro AI</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600;700&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0e0e11;--surface:#16161a;--surface2:#1e1e24;--surface3:#26262e;
+  --border:#2e2e38;--border2:#3a3a48;
+  --text:#e8e8f0;--muted:#888899;--dim:#555566;
+  --accent:#7c6af7;--accent2:#5a4fd4;--accent-glow:rgba(124,106,247,0.15);
+  --green:#4ade80;--amber:#fbbf24;--red:#f87171;--sky:#38bdf8;--pink:#f472b6;
+  --font:'Inter',sans-serif;--mono:'IBM Plex Mono',monospace;
+  --r:12px;--r2:7px;
+}
+body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14px;height:100vh;overflow:hidden;display:flex;flex-direction:column}
+.app{display:flex;flex:1;overflow:hidden}
+
+/* ── Left: History ── */
+.hist-sidebar{width:210px;min-width:210px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.hist-header{padding:12px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.hist-logo{display:flex;align-items:center;gap:7px}
+.logo-ic{width:24px;height:24px;background:var(--accent);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:13px;color:#fff;font-weight:700}
+.hist-brand{font-size:13px;font-weight:700}
+.new-btn{background:var(--accent);color:#fff;border:none;border-radius:var(--r2);padding:4px 9px;font-size:11px;font-family:var(--font);cursor:pointer;font-weight:600;transition:background .15s;white-space:nowrap}
+.new-btn:hover{background:var(--accent2)}
+.hist-list{flex:1;overflow-y:auto;padding:6px}
+.hist-list::-webkit-scrollbar{width:3px}
+.hist-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.hist-item{padding:8px 9px;border-radius:var(--r2);cursor:pointer;margin-bottom:3px;border:1px solid transparent;position:relative;transition:all .15s}
+.hist-item:hover{background:var(--surface2);border-color:var(--border)}
+.hist-item.active{background:var(--accent-glow);border-color:var(--accent)}
+.hi-title{font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text)}
+.hi-meta{font-size:10px;color:var(--dim);margin-top:1px}
+.hi-del{position:absolute;right:5px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--dim);cursor:pointer;font-size:14px;opacity:0;line-height:1;padding:2px}
+.hist-item:hover .hi-del{opacity:1}
+.hi-del:hover{color:var(--red)}
+.hist-empty{padding:14px 10px;text-align:center;color:var(--dim);font-size:11px;line-height:1.6}
+
+/* ── Right: Model + Docs ── */
+.right-sidebar{width:230px;min-width:230px;background:var(--surface);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.s-sec{padding:10px 13px;border-bottom:1px solid var(--border)}
+.s-lbl{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);margin-bottom:6px;font-weight:600}
+select{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r2);padding:7px 10px;color:var(--text);font-family:var(--font);font-size:12px;cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center}
+select:focus{outline:none;border-color:var(--accent)}
+.status-row{display:flex;align-items:center;gap:6px;margin-top:5px;font-size:11px;color:var(--muted)}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0;animation:pulse 2s infinite}
+.dot.red{background:var(--red);animation:none}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.rag-row{display:flex;align-items:center;justify-content:space-between;padding:3px 0;cursor:pointer}
+.toggle{width:36px;height:20px;background:var(--surface3);border-radius:10px;position:relative;transition:background .2s;border:1px solid var(--border2)}
+.toggle.on{background:var(--accent)}
+.toggle::after{content:'';position:absolute;top:3px;left:3px;width:12px;height:12px;background:#fff;border-radius:50%;transition:transform .2s}
+.toggle.on::after{transform:translateX(16px)}
+.topk-row{display:flex;gap:6px;align-items:center;margin-top:5px;font-size:11px;color:var(--dim)}
+.kb-area{flex:1;padding:10px 13px;overflow-y:auto;display:flex;flex-direction:column;gap:4px}
+.kb-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:3px}
+.kb-item{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r2);padding:7px 9px;display:flex;align-items:center;gap:7px;cursor:pointer;transition:border-color .15s}
+.kb-item.on{border-color:var(--accent);background:var(--accent-glow)}
+.kb-meta{flex:1;min-width:0}
+.kb-name{font-size:11px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kb-info{font-size:10px;color:var(--muted)}
+.kb-del{background:none;border:none;color:var(--dim);cursor:pointer;font-size:14px;line-height:1;transition:color .15s}
+.kb-del:hover{color:var(--red)}
+.kb-empty{text-align:center;padding:14px 6px;color:var(--dim);font-size:11px;line-height:1.6}
+
+/* ── Main ── */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{padding:10px 16px;border-bottom:1px solid var(--border);background:var(--surface);display:flex;align-items:center;gap:10px}
+.topbar-title{font-size:14px;font-weight:700;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.clr-btn{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r2);padding:5px 8px;font-size:13px;cursor:pointer;color:var(--muted);transition:all .15s}
+.clr-btn:hover{color:var(--red);border-color:var(--red)}
+
+/* ── Messages ── */
+.msgs{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;scroll-behavior:smooth}
+.msgs::-webkit-scrollbar{width:4px}
+.msgs::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.msg{display:flex;gap:9px;animation:up .2s ease}
+@keyframes up{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.msg.user{flex-direction:row-reverse}
+.av{width:28px;height:28px;border-radius:7px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+.av.ai{background:var(--accent);color:#fff}
+.av.user{background:var(--surface3);border:1px solid var(--border2);color:var(--text)}
+.bubble{max-width:80%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:10px 14px;font-size:13.5px;line-height:1.65}
+.msg.user .bubble{background:var(--accent2);border-color:var(--accent);color:#fff;border-radius:var(--r) var(--r) 3px var(--r)}
+.msg.ai .bubble{border-radius:var(--r) var(--r) var(--r) 3px}
+.rag-tag{display:inline-flex;align-items:center;gap:4px;background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.25);border-radius:4px;padding:2px 7px;font-size:10px;color:var(--green);font-family:var(--mono);margin-bottom:5px;font-weight:500}
+.src-row{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px;padding-top:8px;border-top:1px solid var(--border)}
+.src-chip{background:var(--surface3);border:1px solid var(--border2);border-radius:4px;padding:2px 7px;font-size:10px;color:var(--muted);font-family:var(--mono)}
+.meta-row{font-size:10px;color:var(--dim);margin-top:5px;font-family:var(--mono)}
+pre{font-family:var(--mono);font-size:12px;background:var(--surface3);border:1px solid var(--border);border-radius:var(--r2);padding:10px;overflow-x:auto;line-height:1.6;margin:6px 0}
+code{font-family:var(--mono);font-size:12px;background:var(--surface3);padding:1px 5px;border-radius:3px;color:var(--sky)}
+.gen-card{border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-top:6px}
+.gc-head{padding:6px 10px;font-size:10px;letter-spacing:1px;text-transform:uppercase;font-weight:600;display:flex;align-items:center;gap:6px;border-bottom:1px solid var(--border)}
+.gc-head.img-h{background:rgba(244,114,182,.08);color:var(--pink)}
+.gc-head.pdf-h{background:rgba(251,191,36,.08);color:var(--amber)}
+.gc-head.code-h{background:rgba(56,189,248,.08);color:var(--sky)}
+.gc-body{padding:10px}
+.code-summary{padding:9px 12px;font-size:12px;line-height:1.55;color:var(--dim);border-bottom:1px solid var(--border);background:var(--surface2)}
+.code-split{display:flex;max-height:480px}
+.code-panel{flex:1.3;overflow:auto;border-right:1px solid var(--border);background:var(--surface3)}
+.code-pre{margin:0;font-family:var(--mono);font-size:12px;line-height:1.65}
+.code-row{display:flex;padding:0 10px;white-space:pre;cursor:pointer;transition:background .12s}
+.code-row:hover{background:var(--surface2)}
+.code-row.active{background:var(--accent-glow)}
+.cl-num{flex:0 0 28px;color:var(--dim);user-select:none;text-align:right;margin-right:10px;font-size:11px}
+.cl-text{color:var(--text)}
+.expl-panel{flex:1;overflow:auto;display:flex;flex-direction:column}
+.expl-row{display:flex;gap:8px;padding:7px 10px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .12s;font-size:12px;line-height:1.5}
+.expl-row:hover{background:var(--surface2)}
+.expl-row.active{background:var(--accent-glow)}
+.expl-num{flex:0 0 20px;color:var(--sky);font-family:var(--mono);font-size:11px;font-weight:600}
+.expl-text{color:var(--text);opacity:.9}
+@media (max-width:700px){.code-split{flex-direction:column;max-height:600px}.code-panel{border-right:none;border-bottom:1px solid var(--border)}}
+.dl-btn{background:var(--surface2);border:1px solid var(--border2);color:var(--text);border-radius:var(--r2);padding:5px 10px;font-size:11px;font-family:var(--font);cursor:pointer;display:inline-flex;align-items:center;gap:5px;margin-top:8px;transition:all .15s;text-decoration:none}
+.dl-btn:hover{border-color:var(--accent);color:var(--accent)}
+
+/* ── Streaming cursor ── */
+.stream-cursor::after{content:'▋';animation:blink .7s steps(1) infinite;color:var(--accent)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+
+/* ── Message action buttons (copy / retry) ── */
+.msg-actions{display:flex;gap:5px;margin-top:8px;padding-top:7px;border-top:1px solid var(--border)}
+.act-btn{background:none;border:1px solid var(--border);border-radius:var(--r2);padding:3px 9px;font-size:10px;cursor:pointer;color:var(--muted);font-family:var(--font);transition:all .15s;display:flex;align-items:center;gap:4px;line-height:1.4}
+.act-btn:hover{border-color:var(--border2);color:var(--text)}
+.act-btn.copied{color:var(--green);border-color:var(--green)}
+.act-btn.stop-gen{background:var(--red);border-color:var(--red);color:#fff}
+.act-btn.stop-gen:hover{background:#dc2626}
+
+/* ── Send button stop state ── */
+.send.stop-mode{background:var(--red)}
+.send.stop-mode:hover{background:#dc2626}
+
+/* ── Topbar utility buttons ── */
+.tb-btn{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r2);padding:5px 9px;font-size:12px;cursor:pointer;color:var(--muted);transition:all .15s;font-family:var(--font);white-space:nowrap}
+.tb-btn:hover{color:var(--text);border-color:var(--border2)}
+
+/* ── Keyboard shortcuts panel ── */
+.shortcuts-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200;display:none;align-items:center;justify-content:center}
+.shortcuts-overlay.open{display:flex}
+.shortcuts-panel{background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r);padding:22px 26px;min-width:310px;box-shadow:0 8px 32px rgba(0,0,0,.5)}
+.sc-title{font-size:14px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between}
+.sc-close{background:none;border:none;color:var(--muted);cursor:pointer;font-size:20px;line-height:1;padding:0}
+.sc-close:hover{color:var(--text)}
+.sc-row{display:flex;align-items:center;justify-content:space-between;padding:6px 0;font-size:12.5px;border-bottom:1px solid var(--border)}
+.sc-row:last-child{border-bottom:none}
+.sc-key{font-family:var(--mono);font-size:11px;background:var(--surface3);padding:3px 7px;border-radius:4px;color:var(--accent)}
+.chat-img{max-width:260px;max-height:180px;border-radius:var(--r2);margin-top:6px;display:block;cursor:pointer;border:1px solid var(--border);object-fit:cover}
+.thinking{display:flex;gap:4px;align-items:center;padding:3px 0}
+.thinking span{width:5px;height:5px;border-radius:50%;background:var(--accent);animation:bounce .9s infinite}
+.thinking span:nth-child(2){animation-delay:.15s}
+.thinking span:nth-child(3){animation-delay:.3s}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+.empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:32px;text-align:center}
+.empty-ic{width:54px;height:54px;background:var(--accent-glow);border:1px solid rgba(124,106,247,.3);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px}
+.empty h2{font-size:18px;font-weight:700}
+.empty p{font-size:13px;color:var(--muted);max-width:300px;line-height:1.6}
+.sug-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;max-width:380px;width:100%;margin-top:4px}
+.sug{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:9px 11px;cursor:pointer;text-align:left;font-family:var(--font);color:var(--text);transition:all .15s}
+.sug:hover{border-color:var(--accent);background:var(--accent-glow)}
+.sug span{display:block;font-size:15px;margin-bottom:3px}
+.sug small{font-size:11px;color:var(--muted);line-height:1.4}
+.pdf-card{background:var(--surface3);border:1px solid var(--border2);border-radius:var(--r2);padding:10px 12px;display:flex;align-items:center;gap:10px;margin-top:6px}
+
+/* ── Input ── */
+.input-area{padding:10px 14px 14px;background:var(--surface);border-top:1px solid var(--border)}
+.attach-previews{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.preview-chip{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r2);padding:5px 8px;display:flex;align-items:center;gap:7px;font-size:12px;position:relative}
+.preview-chip img{width:44px;height:44px;object-fit:cover;border-radius:5px;cursor:pointer;border:1px solid var(--border)}
+.preview-chip .chip-name{max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;color:var(--muted)}
+.preview-chip .chip-del{background:none;border:none;color:var(--red);cursor:pointer;font-size:15px;line-height:1;padding:0 2px}
+.chip-code-icon{font-size:18px;width:30px;text-align:center}
+.chip-meta{font-size:9px;color:var(--dim)}
+.sent-code-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
+.sent-code-chip{background:rgba(255,255,255,.12);border-radius:var(--r2);padding:4px 9px;font-size:11px;font-family:var(--mono)}
+.input-row{display:flex;gap:8px;align-items:flex-end}
+textarea{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:10px 14px;color:var(--text);font-family:var(--font);font-size:14px;resize:none;max-height:120px;min-height:44px;line-height:1.5;transition:border-color .15s}
+textarea:focus{outline:none;border-color:var(--accent)}
+textarea::placeholder{color:var(--dim)}
+
+/* + attach dropdown */
+.attach-wrap{position:relative}
+.plus-btn{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r2);width:40px;height:44px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:20px;color:var(--muted);transition:all .15s;font-weight:300}
+.plus-btn:hover{border-color:var(--accent);color:var(--accent)}
+.attach-menu{position:absolute;bottom:52px;left:0;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r);padding:5px;min-width:160px;display:none;flex-direction:column;gap:2px;z-index:50;box-shadow:0 4px 20px rgba(0,0,0,.4)}
+.attach-menu.open{display:flex}
+.am-item{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:var(--r2);cursor:pointer;font-size:13px;color:var(--text);transition:background .12s;border:none;background:none;font-family:var(--font);width:100%;text-align:left}
+.am-item:hover{background:var(--surface3)}
+.am-icon{font-size:16px;width:22px;text-align:center}
+.am-label{font-size:12px;font-weight:500}
+.am-sub{font-size:10px;color:var(--muted);display:block}
+
+.send{background:var(--accent);border:none;border-radius:var(--r);width:44px;height:44px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;font-size:20px;transition:background .15s}
+.send:hover{background:var(--accent2)}
+.send:disabled{opacity:.4;cursor:not-allowed}
+.hint{font-size:10px;color:var(--dim);margin-top:4px}
+.hint .ph{color:var(--pink);font-family:var(--mono)}
+.err-bar{background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.3);border-radius:var(--r2);padding:7px 12px;font-size:12px;color:var(--red);margin-bottom:6px;display:none}
+.err-bar.show{display:block}
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%) translateY(8px);background:var(--surface3);border:1px solid var(--border2);border-radius:var(--r);padding:7px 16px;font-size:12px;opacity:0;transition:all .22s;pointer-events:none;z-index:100;white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+input[type=file]{display:none}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- LEFT: History -->
+<aside class="hist-sidebar">
+  <div class="hist-header">
+    <div class="hist-logo">
+      <div class="logo-ic">⬡</div>
+      <span class="hist-brand">Quattro</span>
+    </div>
+    <button class="new-btn" onclick="newChat()">+ New</button>
+  </div>
+  <div class="hist-list" id="histList">
+    <div class="hist-empty">No chats yet.<br>Start a conversation!</div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+  <div class="topbar">
+    <div class="topbar-title" id="chatTitle"> AI Chatbot</div>
+    <button class="tb-btn" onclick="exportChat()" title="Export chat (Ctrl+E)">⬇ Export</button>
+    <button class="tb-btn" onclick="showShortcuts()" title="Keyboard shortcuts (?)">⌨</button>
+    <button class="clr-btn" onclick="clearChat()" title="Clear chat">🗑</button>
+  </div>
+  <div class="err-bar" id="errBar"></div>
+  <div class="msgs" id="msgs">
+    <div class="empty" id="emptyState">
+      <div class="empty-ic">⬡</div>
+      <h2>Quattro AI</h2>
+      <p>Hello user. How may I assist you today?</p>
+      <div class="sug-grid">
+        <button class="sug" onclick="suggest('Hello! Are you working?')"><span>👋</span><small>Test the connection</small></button>
+        <button class="sug" onclick="suggest('Summarize the uploaded documents')"><span>📄</span><small>Summarize my PDFs</small></button>
+        <button class="sug" onclick="suggest('Write a Python web scraper')"><span>💻</span><small>Generate some code</small></button>
+        <button class="sug" onclick="suggest('What information is in my documents?')"><span>🔍</span><small>Query my docs</small></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="input-area">
+    <!-- Attachment previews -->
+    <div class="attach-previews" id="attachPreviews"></div>
+    <div class="input-row">
+      <!-- + button -->
+      <div class="attach-wrap">
+        <button class="plus-btn" id="plusBtn" onclick="toggleAttachMenu(event)" title="Attach">+</button>
+        <div class="attach-menu" id="attachMenu">
+          <button class="am-item" onclick="pickFile('imgIn')">
+            <span class="am-icon">🖼</span>
+            <div><div class="am-label">Image</div><span class="am-sub">PNG, JPG, GIF…</span></div>
+          </button>
+          <button class="am-item" onclick="pickFile('pdfIn')">
+            <span class="am-icon">📄</span>
+            <div><div class="am-label">PDF / Document</div><span class="am-sub">PDF, DOCX, XLSX, PPTX…</span></div>
+          </button>
+          <button class="am-item" onclick="pickFile('docIn')">
+            <span class="am-icon">📁</span>
+            <div><div class="am-label">Any File</div><span class="am-sub">CSV, JSON, any format</span></div>
+          </button>
+          <button class="am-item" onclick="pickFile('codeIn')">
+            <span class="am-icon">⌨️</span>
+            <div><div class="am-label">Code File</div><span class="am-sub">.py .c .h .sh .ipynb …</span></div>
+          </button>
+        </div>
+      </div>
+
+      <textarea id="msgInput"
+        placeholder="Write a message..."
+        rows="1"
+        onkeydown="handleKey(event)"
+        oninput="autoResize(this)"
+        onpaste="handlePaste(event)"
+        ondragover="event.preventDefault()"
+        ondrop="handleDrop(event)"></textarea>
+
+      <button class="send" id="sendBtn" onclick="sendOrStop()">↑</button>
+    </div>
+    <div class="hint">
+      <span id="hintModel">llama3.2</span> · RAG <span id="ragHint">on</span> · localhost:8000
+      &nbsp;<span class="ph">Ctrl+N=new · Ctrl+K=focus · Ctrl+E=export · ?=shortcuts · Esc=stop</span>
+    </div>
+  </div>
+</main>
+
+<!-- RIGHT: Model + Settings -->
+<aside class="right-sidebar">
+  <div class="s-sec">
+    <div class="s-lbl">Model</div>
+    <select id="modelSel" onchange="onModelChange()">
+      <optgroup label="── Installed" id="installedGrp"></optgroup>
+    </select>
+    <div class="status-row">
+      <span class="dot" id="statusDot"></span>
+      <span id="statusTxt">Connecting…</span>
+    </div>
+  </div>
+
+  <div class="s-sec">
+    <div class="s-lbl">RAG</div>
+    <div class="rag-row" onclick="toggleRag()">
+      <span style="font-size:12px">⚡ Retrieval Augmented</span>
+      <div class="toggle on" id="ragToggle"></div>
+    </div>
+    <div class="topk-row">
+      top-<span id="topkVal">3</span>
+      <input type="range" min="1" max="8" value="3" style="flex:1" id="topkSlider" oninput="document.getElementById('topkVal').textContent=this.value">
+    </div>
+  </div>
+
+  <div class="kb-area" style="display:none">
+    <div class="kb-head">
+      <div class="s-lbl" style="margin-bottom:0">Docs (<span id="kbCount">0</span>)</div>
+    </div>
+    <div id="kbList"><div class="kb-empty">No docs yet.<br>Use + to upload PDFs.</div></div>
+  </div>
+</aside>
+
+</div>
+
+<!-- Hidden file inputs -->
+<input type="file" id="imgIn" accept="image/*" multiple onchange="handleImgFiles(event)">
+<input type="file" id="pdfIn" accept=".pdf,.txt,.md,.docx,.csv,.json,.xlsx,.xls,.pptx,.ppt" multiple onchange="handleDocFiles(event)">
+<input type="file" id="docIn" multiple onchange="handleDocFiles(event)">
+<input type="file" id="codeIn" accept=".py,.sh,.ipynb,.c,.h,.lex.yy.c,.o,text/x-python,text/x-csrc,text/x-chdr" multiple onchange="handleCodeFiles(event)">
+
+<!-- Keyboard shortcuts modal -->
+<div class="shortcuts-overlay" id="shortcutsOverlay" onclick="closeShortcuts(event)">
+  <div class="shortcuts-panel" onclick="event.stopPropagation()">
+    <div class="sc-title">⌨ Keyboard Shortcuts <button class="sc-close" onclick="closeShortcuts()">×</button></div>
+    <div class="sc-row"><span>Send message</span><span class="sc-key">Enter</span></div>
+    <div class="sc-row"><span>New line</span><span class="sc-key">Shift+Enter</span></div>
+    <div class="sc-row"><span>New chat</span><span class="sc-key">Ctrl+N</span></div>
+    <div class="sc-row"><span>Focus input</span><span class="sc-key">Ctrl+K</span></div>
+    <div class="sc-row"><span>Export chat</span><span class="sc-key">Ctrl+E</span></div>
+    <div class="sc-row"><span>Attach file</span><span class="sc-key">Ctrl+O</span></div>
+    <div class="sc-row"><span>Paste image</span><span class="sc-key">Ctrl+V</span></div>
+    <div class="sc-row"><span>Stop generation</span><span class="sc-key">Escape</span></div>
+    <div class="sc-row"><span>Show shortcuts</span><span class="sc-key">?</span></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = 'http://localhost:8000';
+let ragOn = true;
+let busy = false;
+let streamController = null; // AbortController for active stream
+let docs = [];
+let attachedImages = []; // [{b64, name}]
+let attachedCodeFiles = []; // [{name, content}] — read as plain text, sent to /chat directly (never RAG-indexed)
+let pendingDocs = [];    // [{name, ext}] — docs uploaded this turn, shown as chips before send
+
+// ── Conversation memory (last 5 turns = 10 messages per session) ──────────────
+// Stored separately from the DOM snapshot so it survives clearMsgs()
+let sessionHistory = {}; // { sessionId: [{role, content}] }
+
+function getHistory() {
+  return sessionHistory[currentSessionId] || [];
+}
+function addToHistory(role, content) {
+  if (!currentSessionId) return;
+  if (!sessionHistory[currentSessionId]) sessionHistory[currentSessionId] = [];
+  sessionHistory[currentSessionId].push({ role, content });
+  // Keep last 5 turns (10 messages: 5 user + 5 assistant)
+  if (sessionHistory[currentSessionId].length > 10) {
+    sessionHistory[currentSessionId].splice(0, 2);
+  }
+}
+function clearHistory() {
+  if (currentSessionId) sessionHistory[currentSessionId] = [];
+}
+
+// ── Model: persist selection ───────────────────────────────────────────────────
+let userPickedModel = localStorage.getItem('quattro_model') || null;
+
+function onModelChange() {
+  const val = document.getElementById('modelSel').value;
+  userPickedModel = val;
+  localStorage.setItem('quattro_model', val);
+  document.getElementById('hintModel').textContent = val;
+}
+
+// ── Chat sessions ──────────────────────────────────────────────────────────────
+let sessions = (() => {
+  try {
+    return JSON.parse(localStorage.getItem('quattro_sessions') || '[]');
+  } catch {
+    // Corrupted data — wipe it so we don't get stuck
+    localStorage.removeItem('quattro_sessions');
+    return [];
+  }
+})();
+let currentSessionId = null;
+
+function saveSessions() {
+  // Strip base64 image data from every snapshot before writing to localStorage.
+  // Raw base64 images can be many MB each and blow the ~5MB quota instantly.
+  // We replace src="data:image/..." with a placeholder; images are not
+  // restored when loading a session (that's acceptable — the conversation
+  // text and AI replies are preserved).
+  const safe = sessions.map(s => ({
+    ...s,
+    snapshot: (s.snapshot || '')
+      .replace(/src="data:[^"]{100,}"/g, 'src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="')
+  }));
+  const json = JSON.stringify(safe);
+  try {
+    localStorage.setItem('quattro_sessions', json);
+  } catch (e) {
+    // Still over quota (e.g. many old sessions) — drop the oldest half and retry
+    if (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
+      sessions.splice(Math.floor(sessions.length / 2));
+      try {
+        localStorage.setItem('quattro_sessions', JSON.stringify(sessions.map(s => ({
+          ...s,
+          snapshot: (s.snapshot || '')
+            .replace(/src="data:[^"]{100,}"/g, 'src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="')
+        }))));
+        toast('Storage was full — oldest chats trimmed');
+      } catch {
+        // Absolute last resort: clear all sessions
+        localStorage.removeItem('quattro_sessions');
+        toast('Storage full — chat history cleared');
+      }
+    }
+  }
+}
+
+function newChat() {
+  saveCurrentSession();
+  const id = 'chat_' + Date.now();
+  sessions.unshift({ id, title: 'New Chat', ts: Date.now(), snapshot: '' });
+  currentSessionId = id;
+  saveSessions();
+  renderHistList();
+  clearMsgs();
+  document.getElementById('chatTitle').textContent = '⬡ Quattro AI';
+  toast('New chat started');
+}
+
+function saveCurrentSession() {
+  if (!currentSessionId) return;
+  const s = sessions.find(x => x.id === currentSessionId);
+  if (!s) return;
+  // Strip base64 image src attributes before saving — they can be megabytes each
+  // and immediately exceed localStorage's ~5MB quota.
+  s.snapshot = document.getElementById('msgs').innerHTML
+    .replace(/src="data:[^"]{100,}"/g, 'src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="');
+  s.ts = Date.now();
+  saveSessions();
+}
+
+function loadSession(id) {
+  saveCurrentSession();
+  currentSessionId = id;
+  const s = sessions.find(x => x.id === id);
+  if (!s) return;
+  renderHistList();
+  const msgs = document.getElementById('msgs');
+  msgs.innerHTML = s.snapshot || emptyHTML();
+  msgs.scrollTop = msgs.scrollHeight;
+  document.getElementById('chatTitle').textContent = s.title || '⬡ Quattro AI';
+}
+
+function deleteSession(id, e) {
+  e.stopPropagation();
+  sessions = sessions.filter(s => s.id !== id);
+  saveSessions();
+  if (currentSessionId === id) { currentSessionId = null; clearMsgs(); }
+  renderHistList();
+  toast('Chat deleted');
+}
+
+function renderHistList() {
+  const list = document.getElementById('histList');
+  if (!sessions.length) { list.innerHTML = '<div class="hist-empty">No chats yet.<br>Start a conversation!</div>'; return; }
+  list.innerHTML = sessions.map(s => `
+    <div class="hist-item ${s.id === currentSessionId ? 'active' : ''}" onclick="loadSession('${s.id}')">
+      <div class="hi-title">${escHtml(s.title)}</div>
+      <div class="hi-meta">${timeAgo(s.ts)}</div>
+      <button class="hi-del" onclick="deleteSession('${s.id}',event)">×</button>
+    </div>`).join('');
+}
+
+function timeAgo(ts) {
+  const d = Date.now() - ts;
+  if (d < 60000) return 'just now';
+  if (d < 3600000) return Math.floor(d/60000) + 'm ago';
+  if (d < 86400000) return Math.floor(d/3600000) + 'h ago';
+  return new Date(ts).toLocaleDateString();
+}
+
+function updateTitle(text) {
+  if (!currentSessionId) return;
+  const s = sessions.find(x => x.id === currentSessionId);
+  if (s && s.title === 'New Chat') {
+    s.title = text.slice(0, 30) + (text.length > 30 ? '…' : '');
+    document.getElementById('chatTitle').textContent = s.title;
+    saveSessions(); renderHistList();
+  }
+}
+
+function emptyHTML() {
+  return `<div class="empty" id="emptyState">
+    <div class="empty-ic">⬡</div><h2>Quattro AI</h2>
+    <p>Hello user. How can I assist you today?</p>
+    <div class="sug-grid">
+      <button class="sug" onclick="suggest('Hello!')"><span>👋</span><small>Test connection</small></button>
+      <button class="sug" onclick="suggest('Summarize the uploaded documents')"><span>📄</span><small>Summarize PDFs</small></button>
+      <button class="sug" onclick="suggest('Write a Python web scraper')"><span>💻</span><small>Generate code</small></button>
+      <button class="sug" onclick="suggest('What is in my documents?')"><span>🔍</span><small>Query docs</small></button>
+    </div>
+  </div>`;
+}
+
+function clearMsgs() { document.getElementById('msgs').innerHTML = emptyHTML(); }
+
+// ── Backend ────────────────────────────────────────────────────────────────────
+async function checkBackend() {
+  try {
+    const r = await fetch(API + '/');
+    if (r.ok) { setStatus(true, 'Connected · localhost:8000'); loadModels(); }
+    else setStatus(false, 'Backend error');
+  } catch { setStatus(false, 'Offline — run uvicorn'); }
+}
+
+async function loadModels() {
+  try {
+    const r = await fetch(API + '/models');
+    const data = await r.json();
+    if (!data.models || !data.models.length) return;
+    const sel = document.getElementById('modelSel');
+    const grp = document.getElementById('installedGrp');
+    const existing = [...sel.options].map(o => o.value);
+    data.models.forEach(m => {
+      if (!existing.includes(m)) grp.appendChild(new Option('⚡ ' + m, m));
+    });
+    // Restore user's last picked model
+    const target = userPickedModel || data.models[0];
+    const allVals = [...sel.options].map(o => o.value);
+    if (allVals.includes(target)) {
+      sel.value = target;
+    } else {
+      sel.value = data.models[0];
+      userPickedModel = data.models[0];
+      localStorage.setItem('quattro_model', userPickedModel);
+    }
+    document.getElementById('hintModel').textContent = sel.value;
+  } catch {}
+}
+
+function setStatus(ok, msg) {
+  document.getElementById('statusDot').className = 'dot' + (ok ? '' : ' red');
+  document.getElementById('statusTxt').textContent = msg;
+}
+
+// ── Attach menu ───────────────────────────────────────────────────────────────
+function toggleAttachMenu(e) {
+  e.stopPropagation();
+  document.getElementById('attachMenu').classList.toggle('open');
+}
+document.addEventListener('click', () => document.getElementById('attachMenu').classList.remove('open'));
+
+function pickFile(inputId) {
+  document.getElementById('attachMenu').classList.remove('open');
+  document.getElementById(inputId).click();
+}
+
+// ── Image handling ────────────────────────────────────────────────────────────
+function handlePaste(e) {
+  const items = e.clipboardData?.items;
+  if (!items || !items.length) return;
+  let foundImage = false;
+  for (const item of items) {
+    if (item.type && item.type.startsWith('image/')) {
+      foundImage = true;
+      const file = item.getAsFile();
+      if (file) addImgFromFile(file, 'Pasted Image ' + (attachedImages.length + 1));
+    }
+  }
+  // Only block the default paste (which would insert garbage text) if we actually grabbed an image.
+  // This also means pasting text normally still works fine afterward.
+  if (foundImage) e.preventDefault();
+}
+
+function handleDrop(e) {
+  e.preventDefault();
+  const files = [...e.dataTransfer.files];
+  files.forEach(f => {
+    if (f.type.startsWith('image/')) addImgFromFile(f, f.name);
+    else uploadSingleDoc(f);
+  });
+}
+
+function handleImgFiles(e) {
+  [...e.target.files].forEach(f => addImgFromFile(f, f.name));
+  e.target.value = '';
+}
+
+function addImgFromFile(file, name) {
+  const reader = new FileReader();
+  reader.onload = ev => {
+    attachedImages.push({ b64: ev.target.result, name });
+    renderAttachPreviews();
+    toast(attachedImages.length + ' image' + (attachedImages.length > 1 ? 's' : '') + ' attached · press Enter to send');
+    // Keep focus on the textarea so the next Ctrl+V is also captured by handlePaste
+    document.getElementById('msgInput').focus();
+  };
+  reader.readAsDataURL(file);
+}
+
+function renderAttachPreviews() {
+  const area = document.getElementById('attachPreviews');
+  if (!attachedImages.length && !attachedCodeFiles.length) { area.innerHTML = ''; return; }
+  const imgChips = attachedImages.map((img, i) => `
+    <div class="preview-chip">
+      <img src="${img.b64}" onclick="window.open(this.src)" title="Click to enlarge">
+      <span class="chip-name">${escHtml(img.name)}</span>
+      <button class="chip-del" onclick="removeImg(${i})">×</button>
+    </div>`).join('');
+  const codeChips = attachedCodeFiles.map((cf, i) => {
+    const meta = cf.binary
+      ? `${(cf.size / 1024).toFixed(1)} KB · binary`
+      : (cf.content.split('\n').length) + ' lines';
+    return `
+    <div class="preview-chip code-chip" title="${escAttr(cf.name)}">
+      <span class="chip-code-icon">${codeFileIcon(cf.name)}</span>
+      <span class="chip-name">${escHtml(cf.name)}<br><span class="chip-meta">${meta}</span></span>
+      <button class="chip-del" onclick="removeCodeFile(${i})">×</button>
+    </div>`;
+  }).join('');
+  const addMoreImg = attachedImages.length
+    ? `<button class="preview-chip" style="cursor:pointer;color:var(--accent);border-color:var(--accent)" onclick="document.getElementById('imgIn').click()" title="Add another image">+ Add more</button>`
+    : '';
+  area.innerHTML = imgChips + codeChips + addMoreImg;
+}
+
+function removeImg(i) {
+  attachedImages.splice(i, 1);
+  renderAttachPreviews();
+}
+
+// ── Code file handling (chat-attached, NEVER RAG-indexed) ─────────────────────
+const CODE_EXT_ICON = { py:'🐍', sh:'🐚', ipynb:'📓', c:'🇨', h:'🔧', o:'⚙️' };
+
+function codeFileIcon(name) {
+  const n = name.toLowerCase();
+  if (n.endsWith('.lex.yy.c')) return '🇨';
+  const ext = n.split('.').pop();
+  return CODE_EXT_ICON[ext] || '📝';
+}
+
+function handleCodeFiles(e) {
+  [...e.target.files].forEach(f => addCodeFile(f));
+  e.target.value = '';
+}
+
+function addCodeFile(file) {
+  const isBinary = file.name.toLowerCase().endsWith('.o');
+  if (isBinary) {
+    // .o is compiled machine code — no readable text to extract or send to the model.
+    attachedCodeFiles.push({
+      name: file.name,
+      content: null,
+      binary: true,
+      size: file.size,
+    });
+    renderAttachPreviews();
+    toast(file.name + ' is a compiled binary — attached as reference only, no content sent');
+    document.getElementById('msgInput').focus();
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = ev => {
+    attachedCodeFiles.push({ name: file.name, content: ev.target.result, binary: false });
+    renderAttachPreviews();
+    toast(attachedCodeFiles.length + ' code file' + (attachedCodeFiles.length > 1 ? 's' : '') + ' attached · press Enter to send');
+    document.getElementById('msgInput').focus();
+  };
+  reader.onerror = () => toast('Could not read ' + file.name);
+  reader.readAsText(file);
+}
+
+function removeCodeFile(i) {
+  attachedCodeFiles.splice(i, 1);
+  renderAttachPreviews();
+}
+
+// ── Doc handling ──────────────────────────────────────────────────────────────
+function handleDocFiles(e) {
+  [...e.target.files].forEach(f => uploadSingleDoc(f));
+  e.target.value = '';
+}
+
+async function uploadSingleDoc(f) {
+  // If it's an image, attach as image instead
+  if (f.type.startsWith('image/')) { addImgFromFile(f, f.name); return; }
+  toast('Uploading ' + f.name + '…');
+  document.getElementById('attachMenu').classList.remove('open');
+  const fd = new FormData(); fd.append('file', f);
+  try {
+    const res = await fetch(API + '/upload', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (!res.ok) {
+      toast('Upload failed: ' + (data.detail || 'unknown error'));
+      addAIMsg('⚠️ Could not index **' + f.name + '**: ' + (data.detail || 'unknown error'), [], '', 0);
+      return;
+    }
+    if (typeof data.chunks !== 'number') {
+      toast('Upload failed for ' + f.name + ' — check backend terminal for errors');
+      addAIMsg('⚠️ **' + f.name + '** was uploaded but indexing failed. Check the uvicorn terminal window for the error.', [], '', 0);
+      return;
+    }
+    docs.push({ id: data.doc_id, name: f.name, chunks: data.chunks, active: true });
+    renderDocs();
+    addPdfIndexMsg(f.name, data.chunks);
+    toast(f.name + ' → ' + data.chunks + ' chunks indexed!');
+  } catch (e) { toast('Upload failed for ' + f.name); }
+}
+
+function renderDocs() {
+  const list = document.getElementById('kbList');
+  document.getElementById('kbCount').textContent = docs.length;
+  if (!docs.length) { list.innerHTML = '<div class="kb-empty">No docs yet.<br>Use + to upload PDFs.</div>'; return; }
+  list.innerHTML = docs.map(d => `
+    <div class="kb-item ${d.active ? 'on' : ''}" onclick="toggleDoc('${d.id}')">
+      <span>${d.name.match(/\.pdf$/i) ? '📄' : d.name.match(/\.(xlsx|xls)$/i) ? '📊' : d.name.match(/\.(pptx|ppt)$/i) ? '📽️' : d.name.match(/\.docx?$/i) ? '📘' : '📝'}</span>
+      <div class="kb-meta">
+        <div class="kb-name">${escHtml(d.name)}</div>
+        <div class="kb-info">${d.chunks} chunks · ${d.active ? 'active' : 'off'}</div>
+      </div>
+      <button class="kb-del" onclick="event.stopPropagation();deleteDoc('${d.id}')">×</button>
+    </div>`).join('');
+}
+
+function toggleDoc(id) { const d = docs.find(x => x.id === id); if (d) { d.active = !d.active; renderDocs(); } }
+async function deleteDoc(id) {
+  try { await fetch(API + '/kb/' + id, { method: 'DELETE' }); } catch {}
+  docs = docs.filter(x => x.id !== id); renderDocs(); toast('Doc removed');
+}
+
+// ── Auto intent detection ──────────────────────────────────────────────────────
+function detectIntent(text) {
+  const t = text.toLowerCase();
+  if (/\b(generate|create|draw|make|paint|illustrate).*(image|picture|photo|art|drawing)\b/.test(t) ||
+      /\b(image|picture|photo)\b.*(of|showing|with)\b/.test(t)) return 'image';
+  if (/\b(generate|create|write|make).*(pdf|report|document|essay|article)\b/.test(t)) return 'pdf';
+  if (/\b(write|generate|create|code|implement|build|make).*(function|script|class|code|program|app)\b/.test(t) ||
+      /\b(python|javascript|java|typescript|rust|go|sql|html|css|bash)\b/.test(t) ||
+      /\bhow (to|do) (implement|code|write|build)\b/.test(t)) return 'code';
+  return 'chat';
+}
+
+function detectCodeLanguage(text) {
+  const t = text.toLowerCase();
+  const map = [
+    [/\b(javascript|js|node\.?js|react|vue)\b/, 'javascript'],
+    [/\btypescript|\bts\b/, 'typescript'],
+    [/\bjava\b(?!script)/, 'java'],
+    [/\bc\+\+|cpp\b/, 'cpp'],
+    [/\bc#|csharp\b/, 'csharp'],
+    [/\brust\b/, 'rust'],
+    [/\bgo(lang)?\b/, 'go'],
+    [/\bsql\b/, 'sql'],
+    [/\bhtml\b/, 'html'],
+    [/\bcss\b/, 'css'],
+    [/\bbash|shell|\.sh\b/, 'bash'],
+    [/\bphp\b/, 'php'],
+    [/\bruby\b/, 'ruby'],
+    [/\bswift\b/, 'swift'],
+    [/\bkotlin\b/, 'kotlin'],
+  ];
+  for (const [re, lang] of map) if (re.test(t)) return lang;
+  return 'python'; // sensible default
+}
+
+// ── Stop streaming ────────────────────────────────────────────────────────────
+function sendOrStop() {
+  if (busy) {
+    stopStream();
+  } else {
+    send();
+  }
+}
+
+function stopStream() {
+  if (streamController) { streamController.abort(); streamController = null; }
+  busy = false;
+  const btn = document.getElementById('sendBtn');
+  btn.classList.remove('stop-mode'); btn.textContent = '↑'; btn.disabled = false;
+  toast('Generation stopped');
+}
+
+function setBusy(on) {
+  busy = on;
+  const btn = document.getElementById('sendBtn');
+  if (on) { btn.classList.add('stop-mode'); btn.textContent = '◼'; btn.disabled = false; }
+  else     { btn.classList.remove('stop-mode'); btn.textContent = '↑'; btn.disabled = false; }
+}
+
+// ── Send ──────────────────────────────────────────────────────────────────────
+async function send() {
+  if (busy) {
+    console.warn('[send] blocked: already busy with a previous request');
+    return;
+  }
+  const inp = document.getElementById('msgInput');
+  const text = inp.value.trim();
+  const imgs = [...attachedImages];
+  const codeFiles = [...attachedCodeFiles];
+  if (!text && !imgs.length && !codeFiles.length) {
+    console.warn('[send] blocked: no text, images, or code files attached');
+    return;
+  }
+
+  setBusy(true);
+
+  try {
+    if (!currentSessionId) {
+      const id = 'chat_' + Date.now();
+      sessions.unshift({ id, title: 'New Chat', ts: Date.now(), snapshot: '' });
+      currentSessionId = id;
+      saveSessions(); renderHistList();
+    }
+
+    document.getElementById('emptyState')?.remove();
+
+    const msgText = text || (imgs.length ? 'What is in this image?' : (codeFiles.length ? 'Please review this code.' : ''));
+    inp.value = ''; autoResize(inp);
+    attachedImages = []; attachedCodeFiles = []; renderAttachPreviews();
+
+    updateTitle(msgText);
+    addUserMsg(msgText, imgs, codeFiles);
+
+    const intent = (imgs.length || codeFiles.length) ? 'chat' : detectIntent(msgText);
+    const thinkId = 'think_' + Date.now();
+    addThinking(thinkId);
+
+    const model = document.getElementById('modelSel').value;
+
+    try {
+      if (intent === 'image') {
+        const res = await fetch(API + '/generate/image', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt: msgText })
+        });
+        const data = await res.json();
+        document.getElementById(thinkId)?.remove();
+        addGenImgMsg(data);
+
+      } else if (intent === 'pdf') {
+        document.getElementById(thinkId)?.remove();
+        addAIMsg('Generating your PDF…', [], '', 0);
+        const res = await fetch(API + '/generate/pdf', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ topic: msgText, model })
+        });
+        if (res.ok) { const blob = await res.blob(); addPdfDlMsg(URL.createObjectURL(blob), msgText); }
+        else addAIMsg('PDF failed. Run: pip install reportlab', [], '', 0);
+
+      } else if (intent === 'code') {
+        const lang = detectCodeLanguage(msgText);
+        const res = await fetch(API + '/generate/code', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ description: msgText, language: lang, model, detail: 'line-by-line' })
+        });
+        const data = await res.json();
+        document.getElementById(thinkId)?.remove();
+        addCodeMsg(data);
+
+      } else {
+        // ── Streaming chat path ─────────────────────────────────────────
+        const topk = parseInt(document.getElementById('topkSlider').value);
+        const imgPayload = imgs.map(img => img.b64.split(',')[1] || img.b64);
+        const codeFilePayload = codeFiles
+          .filter(cf => !cf.binary)
+          .map(cf => ({ filename: cf.name, content: cf.content }));
+        const binaryNames = codeFiles.filter(cf => cf.binary).map(cf => cf.name);
+        const finalMsg = binaryNames.length
+          ? msgText + `\n\n[Note: ${binaryNames.join(', ')} ${binaryNames.length > 1 ? 'are' : 'is'} a compiled binary object file — no readable content was attached.]`
+          : msgText;
+
+        streamController = new AbortController();
+
+        let fetchRes;
+        try {
+          fetchRes = await fetch(API + '/chat/stream', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              message: finalMsg, model,
+              use_rag: ragOn && docs.filter(d => d.active).length > 0 && imgs.length === 0 && codeFiles.length === 0,
+              top_k: topk,
+              history: getHistory(),   // ← last 5 turns of memory
+              images: imgPayload,
+              code_files: codeFilePayload,
+            }),
+            signal: streamController.signal,
+          });
+        } catch (fetchErr) {
+          if (fetchErr.name === 'AbortError') {
+            document.getElementById(thinkId)?.remove();
+            return;
+          }
+          throw fetchErr;
+        }
+
+        if (!fetchRes.ok) throw new Error('Stream request failed: ' + fetchRes.status);
+
+        document.getElementById(thinkId)?.remove();
+
+        // Create live streaming bubble
+        const streamBubble = createStreamBubble();
+        let fullText = '';
+        let ragSources = [];
+
+        const reader = fetchRes.body.getReader();
+        const decoder = new TextDecoder();
+        let buf = '';
+
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buf += decoder.decode(value, { stream: true });
+            const parts = buf.split('\n\n');
+            buf = parts.pop() ?? '';
+            for (const part of parts) {
+              if (!part.startsWith('data: ')) continue;
+              const payload = part.slice(6);
+              if (payload === '[DONE]') break;
+              if (payload.startsWith('[ERROR]')) {
+                appendToStreamBubble(streamBubble, '\n\n⚠️ ' + payload.slice(7));
+                break;
+              }
+              if (payload.startsWith('[SOURCES]:')) {
+                try { ragSources = JSON.parse(payload.slice(10)).sources || []; } catch {}
+                continue;
+              }
+              // Unescape server-side \n escaping
+              const token = payload.replace(/\\n/g, '\n');
+              fullText += token;
+              appendToStreamBubble(streamBubble, null, fullText);
+            }
+          }
+        } catch (readErr) {
+          if (readErr.name !== 'AbortError') throw readErr;
+          // Aborted — leave partial text in place, just finalize it
+        }
+
+        finalizeStreamBubble(streamBubble, fullText, ragSources, model);
+
+        // Record both sides in conversation memory
+        addToHistory('user', finalMsg);
+        addToHistory('assistant', fullText);
+      }
+    } catch (innerErr) {
+      console.error('[send] request failed:', innerErr);
+      document.getElementById(thinkId)?.remove();
+      showErr('Cannot reach backend. Is uvicorn running?');
+      addAIMsg('Backend offline. Run: uvicorn app.main:app --reload --port 8000', [], '', 0);
+    }
+
+    saveCurrentSession();
+  } catch (outerErr) {
+    console.error('[send] unexpected error:', outerErr);
+    showErr('Something went wrong sending your message. Check the console (F12) for details.');
+  } finally {
+    streamController = null;
+    setBusy(false);
+  }
+}
+
+// ── Streaming bubble helpers ──────────────────────────────────────────────────
+function createStreamBubble() {
+  const el = document.createElement('div');
+  el.className = 'msg ai';
+  el.innerHTML = '<div class="av ai">⬡</div><div class="bubble stream-cursor" id="activeBubble"></div>';
+  append(el);
+  return el;
+}
+
+function appendToStreamBubble(el, _unused, fullText) {
+  const b = el.querySelector('.bubble');
+  if (!b) return;
+  b.innerHTML = fmt(fullText || '');
+  // Keep scroll pinned to bottom while streaming
+  const msgs = document.getElementById('msgs');
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function finalizeStreamBubble(el, fullText, sources, model) {
+  const b = el.querySelector('.bubble');
+  if (!b) return;
+  b.classList.remove('stream-cursor');
+  b.removeAttribute('id');
+  let html = '';
+  if (sources && sources.length) {
+    html += `<div class="rag-tag">⚡ RAG · ${sources.length} sources</div><br>`;
+  }
+  html += fmt(fullText);
+  if (sources && sources.length) {
+    html += `<div class="src-row">${sources.map(s => `<span class="src-chip">${escHtml(s)}</span>`).join('')}</div>`;
+  }
+  if (model) html += `<div class="meta-row">${escHtml(model)} · streaming</div>`;
+  html += buildMsgActions(fullText);
+  b.innerHTML = html;
+}
+
+// ── Message action buttons (copy + retry) ─────────────────────────────────────
+function buildMsgActions(text) {
+  // Store text in a data attribute on a wrapper to avoid URL-encoding bugs
+  const id = 'act_' + Math.random().toString(36).slice(2, 9);
+  // Inject a hidden span with the text so we can retrieve it safely
+  return `<div class="msg-actions" data-text-id="${id}">
+    <span id="${id}" style="display:none">${escHtml(text)}</span>
+    <button class="act-btn" onclick="copyMsgText('${id}',this)">📋 Copy</button>
+    <button class="act-btn" onclick="retryMsg('${id}')">↺ Retry</button>
+  </div>`;
+}
+
+function copyMsgText(id, btn) {
+  const raw = document.getElementById(id)?.textContent ?? '';
+  navigator.clipboard.writeText(raw).then(() => {
+    const old = btn.innerHTML; btn.innerHTML = '✓ Copied'; btn.classList.add('copied');
+    setTimeout(() => { btn.innerHTML = old; btn.classList.remove('copied'); }, 2000);
+  }).catch(() => toast('Copy failed — check browser permissions'));
+}
+
+function retryMsg(id) {
+  if (busy) { toast('Wait for current response to finish'); return; }
+  const raw = document.getElementById(id)?.textContent ?? '';
+  if (!raw) return;
+  // Find the user message immediately before this AI bubble and put it back
+  // in the input, then send. Simpler and more reliable than removing DOM nodes.
+  document.getElementById('msgInput').value = raw;
+  autoResize(document.getElementById('msgInput'));
+  // Pop the last assistant turn from memory so it isn't double-counted
+  if (currentSessionId && sessionHistory[currentSessionId]) {
+    const h = sessionHistory[currentSessionId];
+    // Remove the last assistant entry (the one we're retrying)
+    const idx = h.map(m => m.role).lastIndexOf('assistant');
+    if (idx !== -1) h.splice(idx, 1);
+  }
+  toast('Retrying…');
+  send();
+}
+
+// ── Export chat ───────────────────────────────────────────────────────────────
+function exportChat() {
+  const msgEls = [...document.getElementById('msgs').querySelectorAll('.msg')];
+  if (!msgEls.length) { toast('Nothing to export yet'); return; }
+  const title = document.getElementById('chatTitle').textContent.replace('⬡ ', '').trim() || 'Chat';
+  const lines = [
+    'Quattro AI — ' + title,
+    'Exported: ' + new Date().toLocaleString(),
+    '='.repeat(52),
+  ];
+  msgEls.forEach(msg => {
+    const isUser = msg.classList.contains('user');
+    const bubble = msg.querySelector('.bubble');
+    if (!bubble) return;
+    // Clone so we can strip action buttons before reading text
+    const clone = bubble.cloneNode(true);
+    clone.querySelectorAll('.msg-actions, .meta-row, .rag-tag').forEach(n => n.remove());
+    const text = (clone.innerText || clone.textContent || '').replace(/\n{3,}/g, '\n\n').trim();
+    if (!text) return;
+    lines.push('');
+    lines.push(isUser ? 'YOU:' : 'AI:');
+    lines.push(text);
+  });
+  lines.push('\n' + '='.repeat(52));
+  const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'quattro_chat_' + Date.now() + '.txt';
+  a.click();
+  toast('Chat exported as .txt');
+}
+
+// ── Keyboard shortcuts ────────────────────────────────────────────────────────
+function showShortcuts() { document.getElementById('shortcutsOverlay').classList.add('open'); }
+function closeShortcuts(e) {
+  // If called from overlay click, only close when clicking the backdrop itself
+  if (e && e.currentTarget !== e.target) return;
+  document.getElementById('shortcutsOverlay').classList.remove('open');
+}
+
+document.addEventListener('keydown', e => {
+  const inInput = document.activeElement === document.getElementById('msgInput');
+  const overlayOpen = document.getElementById('shortcutsOverlay').classList.contains('open');
+
+  if (e.key === 'Escape') {
+    if (overlayOpen) { closeShortcuts(); return; }
+    if (busy) { stopStream(); return; }
+  }
+  // Don't fire shortcuts while typing (except Ctrl combos)
+  if (e.ctrlKey || e.metaKey) {
+    if (e.key === 'n' || e.key === 'N') { e.preventDefault(); newChat(); }
+    if (e.key === 'k' || e.key === 'K') { e.preventDefault(); document.getElementById('msgInput').focus(); }
+    if (e.key === 'e' || e.key === 'E') { e.preventDefault(); exportChat(); }
+    if (e.key === 'o' || e.key === 'O') { e.preventDefault(); document.getElementById('attachMenu').classList.toggle('open'); }
+  }
+  // ? key — only when not focused in textarea
+  if (e.key === '?' && !inInput && !overlayOpen) { showShortcuts(); }
+});
+
+// ── Message renderers ─────────────────────────────────────────────────────────
+function addUserMsg(text, imgs, codeFiles) {
+  const el = document.createElement('div'); el.className = 'msg user';
+  let c = imgs.map(img => `<img src="${img.b64}" class="chat-img" onclick="window.open(this.src)" alt="image">`).join('');
+  if (codeFiles && codeFiles.length) {
+    c += `<div class="sent-code-chips">` + codeFiles.map(cf =>
+      `<span class="sent-code-chip">${codeFileIcon(cf.name)} ${escHtml(cf.name)}</span>`
+    ).join('') + `</div>`;
+  }
+  if (text) c += `<div>${fmt(text)}</div>`;
+  el.innerHTML = `<div class="bubble">${c}</div><div class="av user">S</div>`;
+  append(el);
+}
+function addAIMsg(text, sources, model, ms) {
+  const el = document.createElement('div'); el.className = 'msg ai';
+  let c = '';
+  if (sources && sources.length) c += `<div class="rag-tag">⚡ RAG · ${sources.length} sources</div><br>`;
+  c += fmt(text);
+  if (sources && sources.length) c += `<div class="src-row">${sources.map(s=>`<span class="src-chip">${escHtml(s)}</span>`).join('')}</div>`;
+  if (model) c += `<div class="meta-row">${escHtml(model)} · ${ms||0}ms</div>`;
+  if (text) c += buildMsgActions(text);
+  el.innerHTML = `<div class="av ai">⬡</div><div class="bubble">${c}</div>`;
+  append(el);
+}
+function addCodeMsg(data) {
+  const code = data.code || '';
+  const lang = data.language || 'code';
+  const model = data.model || '';
+  const lineExplanations = data.lines || [];
+  const summary = data.summary || '';
+
+  const codeLines = code.split('\n');
+  const explMap = {};
+  lineExplanations.forEach(e => { explMap[e.line] = e.text; });
+
+  const hasExplanations = lineExplanations.length > 0;
+
+  // Build numbered code rows (left panel)
+  const codeRows = codeLines.map((line, i) => {
+    const n = i + 1;
+    const active = explMap[n] ? ` data-has-expl="1"` : '';
+    return `<div class="code-row" data-line="${n}"${active} onclick="highlightCodeLine(${n})">
+      <span class="cl-num">${n}</span><span class="cl-text">${escHtml(line) || ' '}</span>
+    </div>`;
+  }).join('');
+
+  // Build explanation list (right/below panel)
+  const explRows = hasExplanations
+    ? lineExplanations.map(e => `
+        <div class="expl-row" data-line="${e.line}" onclick="highlightCodeLine(${e.line})">
+          <span class="expl-num">${e.line}</span>
+          <span class="expl-text">${escHtml(e.text)}</span>
+        </div>`).join('')
+    : `<div class="kb-empty" style="padding:18px 10px">No line-by-line breakdown for this response.</div>`;
+
+  const el = document.createElement('div'); el.className = 'msg ai';
+  el.innerHTML = `<div class="av ai">⬡</div><div class="bubble" style="max-width:min(900px,92%)">
+    <div class="gen-card">
+      <div class="gc-head code-h">💻 ${escHtml(lang)}
+        <button onclick="navigator.clipboard.writeText(this.dataset.c);this.textContent='Copied!';setTimeout(()=>this.textContent='Copy',2000)"
+          data-c="${escAttr(code)}" style="margin-left:auto;background:none;border:none;color:var(--sky);font-size:10px;cursor:pointer;font-family:var(--font)">Copy</button>
+      </div>
+      ${summary ? `<div class="code-summary">${escHtml(summary)}</div>` : ''}
+      <div class="code-split">
+        <div class="code-panel"><pre class="code-pre">${codeRows}</pre></div>
+        <div class="expl-panel">${explRows}</div>
+      </div>
+    </div>
+    <div class="meta-row">${escHtml(model)}</div>
+  </div>`;
+  append(el);
+}
+
+function highlightCodeLine(n) {
+  document.querySelectorAll('.code-row.active, .expl-row.active').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll(`.code-row[data-line="${n}"], .expl-row[data-line="${n}"]`).forEach(el => {
+    el.classList.add('active');
+    el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  });
+}
+function addGenImgMsg(data) {
+  const el = document.createElement('div'); el.className = 'msg ai';
+  const src = data.b64 ? 'data:image/png;base64,'+data.b64 : API+(data.url||'');
+  el.innerHTML = `<div class="av ai">⬡</div><div class="bubble">
+    <div class="gen-card">
+      <div class="gc-head img-h">🎨 Generated Image</div>
+      <div class="gc-body">
+        <img src="${src}" style="width:100%;border-radius:6px;max-height:280px;object-fit:cover"
+          onerror="this.parentElement.innerHTML='<div style=padding:16px;color:var(--dim);font-size:12px>Start Stable Diffusion on port 7860 for image generation.</div>'">
+        <a href="${src}" download="quattroai.png" class="dl-btn">⬇ Download</a>
+      </div>
+    </div>
+  </div>`;
+  append(el);
+}
+function addPdfDlMsg(url, topic) {
+  const el = document.createElement('div'); el.className = 'msg ai';
+  el.innerHTML = `<div class="av ai">⬡</div><div class="bubble">
+    <div class="gen-card">
+      <div class="gc-head pdf-h">📄 PDF Ready</div>
+      <div class="gc-body">
+        <div style="font-size:13px;margin-bottom:8px">Report: <b>${escHtml(topic)}</b></div>
+        <a href="${url}" download="quattroai_report.pdf" class="dl-btn">⬇ Download PDF</a>
+      </div>
+    </div>
+  </div>`;
+  append(el);
+}
+function addPdfIndexMsg(name, chunks) {
+  const el = document.createElement('div'); el.className = 'msg ai';
+  el.innerHTML = `<div class="av ai">⬡</div><div class="bubble">
+    <div class="pdf-card">
+      <span style="font-size:22px">📄</span>
+      <div>
+        <div style="font-size:12px;font-weight:600">${escHtml(name)}</div>
+        <div style="font-size:10px;color:var(--green);font-family:var(--mono);margin-top:2px">✓ ${chunks} chunks indexed · RAG ready</div>
+      </div>
+    </div>
+    <div style="font-size:12px;color:var(--muted);margin-top:6px">You can now ask questions about this document!</div>
+  </div>`;
+  append(el);
+}
+function addThinking(id) {
+  const el = document.createElement('div'); el.className = 'msg ai'; el.id = id;
+  el.innerHTML = '<div class="av ai">⬡</div><div class="bubble"><div class="thinking"><span></span><span></span><span></span></div></div>';
+  append(el);
+}
+function append(el) {
+  const msgs = document.getElementById('msgs');
+  msgs.appendChild(el); msgs.scrollTop = msgs.scrollHeight;
+}
+
+// ── Utils ─────────────────────────────────────────────────────────────────────
+function fmt(t){return escHtml(t||'').replace(/\*\*(.*?)\*\*/g,'<b>$1</b>').replace(/`([^`]+)`/g,'<code>$1</code>').replace(/\n/g,'<br>')}
+function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function escAttr(s){return String(s).replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
+function autoResize(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,120)+'px'}
+function handleKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}}
+function suggest(t){document.getElementById('msgInput').value=t;document.getElementById('emptyState')?.remove();send();}
+function clearChat(){
+  if(currentSessionId){const s=sessions.find(x=>x.id===currentSessionId);if(s){s.snapshot='';s.title='New Chat';saveSessions();renderHistList();}}
+  clearMsgs(); clearHistory(); document.getElementById('chatTitle').textContent='⬡ Quattro AI'; toast('Chat cleared');
+}
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+function showErr(msg){const b=document.getElementById('errBar');b.textContent=msg;b.classList.add('show');setTimeout(()=>b.classList.remove('show'),5000);}
+function toggleRag(){ragOn=!ragOn;document.getElementById('ragToggle').classList.toggle('on',ragOn);document.getElementById('ragHint').textContent=ragOn?'on':'off';toast(ragOn?'RAG enabled':'RAG disabled');}
+
+// Init
+// ── One-time migration: strip any base64 images already sitting in localStorage ──
+// This fixes the QuotaExceededError for users who have the old bloated data.
+(function migrateStorage() {
+  try {
+    const raw = localStorage.getItem('quattro_sessions');
+    if (!raw) return;
+    const cleaned = raw.replace(/src=\\"data:[^\\"]{100,}\\"/g,
+      'src=\\"data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==\\"');
+    if (cleaned.length < raw.length) {
+      localStorage.setItem('quattro_sessions', cleaned);
+      // Reload the sessions variable with the cleaned data
+      try { sessions = JSON.parse(cleaned); } catch {}
+    }
+  } catch {}
+})();
+
+checkBackend();
+setInterval(checkBackend, 15000);
+renderDocs();
+renderHistList();
+</script>
+</body>
+</html>
